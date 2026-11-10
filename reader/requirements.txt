@@ -1,0 +1,3 @@
+# Dependencies for FMMT 27 reader
+# Install with: pip install -r requirements.txt
+

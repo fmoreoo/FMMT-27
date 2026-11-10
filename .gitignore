@@ -1,0 +1,11 @@
+# build output (attach the exe to a GitHub Release instead of committing it)
+dist/
+build/
+*.spec
+
+# Python
+__pycache__/
+*.pyc
+
+# logs
+*.log
