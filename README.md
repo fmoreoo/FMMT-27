@@ -35,7 +35,7 @@ In Compare and Graphs, type a name to find a player.
 ## Requirements
 
 - Windows 10 or 11
-- Football Manager 27: the current Microsoft Store version 0.9.2409.0 (engine build 6AE563A1-175DA000) or the earlier build 6ADFB11C-19E69000. Football Manager 26 (game version 26.3.2). The older game is still supported: the tool picks the right settings for the build it finds.
+- Football Manager 27: the current Microsoft Store version 0.9.2435.0 (engine build 6AE8CF77-17969000), or the earlier 0.9.2409.0 (6AE563A1-175DA000) and 6ADFB11C-19E69000. Football Manager 26 (game version 26.3.2). The older game is still supported: the tool picks the right settings for the build it finds.
 - Microsoft Edge (included with Windows) for the app window
 - To run from source: Python 3.12 or newer. The reader uses only the standard library.
 
@@ -105,7 +105,7 @@ It reads every player and checks that each field looks plausible: ages and heigh
 - Personality, playing style and weight are not read yet, so they show "–".
 - Reserve and B-team players (about 0.6%) show their parent club and its league.
 - The game shows Distance/90 at a tenth of the tool's figure (1.3 km against 13.1 km). The tool shows real distance: a full-match outfielder covers 9 to 13 km.
-- The tool was checked on FM27 version 0.9.2409.0 (engine build id 6AE563A1-175DA000), the earlier FM27 build 6ADFB11C-19E69000 and FM26 build 26.3.2 (6A229F1E-1D8D3000). A game patch may move some fields. Memory offsets are constants at the top of `reader/fm27.py`, and what differs between versions is in `PROFILES` there, so a patch means updating them there. An unknown build uses the newest profile and shows a warning. Run `reader/sanity.py` to find out.
+- The tool was checked on FM27 version 0.9.2435.0 (engine build id 6AE8CF77-17969000), version 0.9.2409.0 (6AE563A1-175DA000), the earlier FM27 build 6ADFB11C-19E69000 and FM26 build 26.3.2 (6A229F1E-1D8D3000). A game patch may move some fields. Memory offsets are constants at the top of `reader/fm27.py`, and what differs between versions is in `PROFILES` there, so a patch means updating them there. An unknown build uses the newest profile and shows a warning. Run `reader/sanity.py` to find out.
 - In FM27 many competitions keep only a reduced record (passes, tackles, fouls, shots, xG, xA). Other stats show "–" for those players. The same applies to matches from before the save began: an outfielder averaging under 8.5 km per 90 is missing detail for part of their minutes, and those stats show "–" too, instead of being spread thinly over all their minutes. This affects most players in many leagues outside the Premier League, Bundesliga and Serie A. Players with reduced data tend to show more shots and tackles and fewer passes per 90 than players with full data, so compare them with care. Keeper save stats come only from competitions that store saves, so they can cover far fewer minutes than the player's total.
 - If you manage a national team, no club is detected. Choose one with the "My club" picker.
 - Expected goals prevented comes from the game's own stored value, which runs negative for most keepers, as it does in the game. Expected save % is worked out from it and runs high.

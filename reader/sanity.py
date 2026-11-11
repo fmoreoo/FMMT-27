@@ -13,7 +13,7 @@ After solving the offsets for a new build, add its id (printed by `python game.p
 shown in the page banner) to KNOWN_BUILDS and a Profile to fm27.py.
 """
 
-KNOWN_BUILDS = {"6A229F1E-1D8D3000", "6ADFB11C-19E69000", "6AE563A1-175DA000"}  # FM26 26.3.2, FM27, FM27 0.9.2409
+KNOWN_BUILDS = {"6A229F1E-1D8D3000", "6ADFB11C-19E69000", "6AE563A1-175DA000", "6AE8CF77-17969000"}  # FM26 26.3.2, FM27, FM27 0.9.2409, FM27 0.9.2435
 
 MIN_SHARE = 0.02   # warn when a check fires on >= 2% of rows
 MIN_ROWS = 20      # below this many rows the shares are too noisy to judge

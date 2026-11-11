@@ -2,7 +2,7 @@
 ; Keep AppId the same in every release: it is how a new installer finds and replaces the old version.
 
 #define AppName "FMMT 27"
-#define AppVersion "1.0.0"
+#define AppVersion "1.0.1"
 #define AppExe "FMMT 27.exe"
 
 [Setup]
