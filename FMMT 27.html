@@ -448,7 +448,10 @@ function lower(a,v){let lo=0,hi=a.length;while(lo<hi){const m=(lo+hi)>>1;if(a[m]
 // Percentiles against: every player is placed among the pool's players from these leagues ("" = all leagues).
 // A stat with fewer than REFMIN values there falls back to all leagues for that stat; REFFB lists those per pool group.
 const REFMIN=20;let REFFB={},REFN={},cRef="";
-function myLeague(){if(MY==null)return null;const n={};P.forEach(p=>{if(cidOf(p)===MY&&!p.r["Loaned From"]){const k=lkey(p.r.Division);if(k)n[k]=(n[k]||0)+1;}});return Object.keys(n).sort((a,b)=>n[b]-n[a])[0]||null;}
+// your club's league: worked out once per club and player list, since filters ask for it once per player
+let MLC=null;
+function myLeague(){if(MY==null)return null;if(MLC&&MLC.my===MY&&MLC.P===P)return MLC.v;
+  const n={};P.forEach(p=>{if(cidOf(p)===MY&&!p.r["Loaned From"]){const k=lkey(p.r.Division);if(k)n[k]=(n[k]||0)+1;}});const v=Object.keys(n).sort((a,b)=>n[b]-n[a])[0]||null;MLC={my:MY,P,v};return v;}
 function refLeagues(ref){if(!ref)return null;if(ref==="top5")return new Set(TOP5);if(ref==="my"){const k=myLeague();return k?new Set([k]):null;}return new Set([ref]);}
 function refName(ref=cRef){if(!ref)return "all leagues";if(ref==="top5")return "the Top 5 leagues";if(ref==="my"){const k=myLeague();return k?(LS[k]||{}).name||k:"your league";}return (LS[ref]||{}).name||ref;}
 // keepers' profiles show only these groups, so only they count towards the keeper warning
@@ -1349,7 +1352,9 @@ function abilPct(p){const g=grpOf(p);if(!g)return NaN;const d=ABP[g]??=P.filter(
   const v=bestAbil(p);return isNaN(v)||!d.length?NaN:Math.floor((lower(d,v)+1)/(d.length+1)*100+1e-9);}
 const hasVal=p=>isFinite(p.vlo)&&p.vlo>0;
 // B and youth teams carry their parent club's league, so they'd be judged against the wrong market: senior teams only
-const senior=p=>!P.some(q=>q.r.Team)||p.r.Team==="Senior Team";
+// whether the data has team names at all, checked once per player list
+let HTC=null;
+const senior=p=>{if(!HTC||HTC.P!==P)HTC={P,v:P.some(q=>q.r.Team)};return !HTC.v||p.r.Team==="Senior Team";};
 const money=v=>!isFinite(v)?"–":v>=1e6?`£${(v/1e6).toFixed(v>=1e7?0:1)}M`:`£${Math.round(v/1e3)}K`;
 const strengths=(p,g,n=3)=>(PKEYS[g]||[]).map(k=>[k,(p.pct||{})[k]]).filter(x=>!isNaN(x[1])).sort((a,b)=>b[1]-a[1]).slice(0,n).map(([k,v])=>`${STATS[k].label} ${v}`).join(", ");
 function solve(A,b){const n=b.length;
