@@ -337,6 +337,7 @@ dialog>:last-child:not(.sfoot){margin-bottom:20px}
       <p class="mut" style="font-size:.82em;margin:4px 0 0">Every player is placed among the pool's players from these leagues, wherever they play. It applies to every tab.</p>
       <p class="mut" id="srefw" style="font-size:.82em;margin:4px 0 0;color:var(--warm)" hidden></p>
       <h3>Wage between (£k a week)</h3><div class="sage"><input type="number" id="swmin" min="0" placeholder="any" aria-label="Minimum wage"> and <input type="number" id="swmax" min="0" placeholder="any" aria-label="Maximum wage"></div>
+      <h3>Value between (£K)</h3><div class="sage"><input type="number" id="svmin" min="0" step="100" placeholder="any" aria-label="Minimum market value in thousands of pounds"> and <input type="number" id="svmax" min="0" step="100" placeholder="any" aria-label="Maximum market value in thousands of pounds"></div>
       <label class="mut" style="display:flex;gap:8px;align-items:center;margin-top:14px"><input type="checkbox" id="swithin"> Rank percentiles within position group</label>
     </div>
     <div class="sright">
@@ -930,7 +931,7 @@ saveSL();
 // ---------- Search window (v0.6: includes everything the old side panel had) ----------
 // mmin/mmax only filter the list; pool is the minimum minutes to be in the percentile pool
 const POOL=300;
-const defSR=()=>({q:"",foot:"",pos:new Set(),lg:new Set(),amin:14,amax:60,mmin:null,mmax:null,pool:POOL,ref:"",wmin:null,wmax:null,within:false,conds:[]});
+const defSR=()=>({q:"",foot:"",pos:new Set(),lg:new Set(),amin:14,amax:60,mmin:null,mmax:null,pool:POOL,ref:"",wmin:null,wmax:null,vmin:null,vmax:null,within:false,conds:[]});
 let SR=defSR(),SD=defSR(),cMin=300,cWithin=false,srTimer=0;
 const cloneS=s=>({...s,pos:new Set(s.pos),lg:new Set(s.lg),conds:s.conds.map(c=>({...c}))});
 const norm=s=>String(s||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
@@ -940,6 +941,8 @@ function matchSR(p,S){
   if(S.mmin!=null&&!(p.r.Mins>=S.mmin))return false;
   if(S.mmax!=null&&p.r.Mins>S.mmax)return false;
   const w=(p.r.Wage||0)/1000;if(S.wmin!=null&&w<S.wmin)return false;if(S.wmax!=null&&w>S.wmax)return false;
+  // market value in £K; players with no stored value only pass when no value limit is set
+  if(S.vmin!=null||S.vmax!=null){if(!hasVal(p))return false;const v=p.vlo/1000;if(S.vmin!=null&&v<S.vmin)return false;if(S.vmax!=null&&v>S.vmax)return false;}
   if(S.q&&!p.key.includes(norm(S.q).trim()))return false;
   if(S.pos.size&&![...S.pos].some(k=>p.pset.has(k)))return false;
   if(S.lg.size&&!S.lg.has(lkey(p.r.Division)))return false;
@@ -949,10 +952,10 @@ function matchSR(p,S){
 const ensureCompute=S=>{if(S.pool!==cMin||S.within!==cWithin||(S.ref||"")!==cRef)compute(S);};
 const PITCH=[["ST(C)","ST",1,3],["AM(L)","AML",2,1],["AM(C)","AMC",2,3],["AM(R)","AMR",2,5],["M(L)","ML",3,1],["M(C)","MC",3,3],["M(R)","MR",3,5],["DM","DM",4,3],["WB(L)","WBL",4,1],["WB(R)","WBR",4,5],["D(L)","DL",5,1],["D(C)","DC",5,3],["D(R)","DR",5,5],["GK","GK",6,3]];
 const statOpts=sel=>Object.keys(GC).map(g=>`<optgroup label="${g}">`+STAT_LIST.filter(x=>x[0]===g).map(x=>`<option value="${esc(x[1])}"${x[1]===sel?" selected":""}>${esc(x[2])}</option>`).join("")+"</optgroup>").join("");
-const srActive=S=>(S.q.trim()?1:0)+(S.foot?1:0)+(S.pos.size?1:0)+(S.lg.size?1:0)+((S.amin>14||S.amax<60)?1:0)+((S.mmin!=null||S.mmax!=null)?1:0)+(S.pool!==POOL?1:0)+((S.wmin!=null||S.wmax!=null)?1:0)+(S.within?1:0)+(S.ref?1:0)+S.conds.filter(c=>c.on).length;
+const srActive=S=>(S.q.trim()?1:0)+(S.foot?1:0)+(S.pos.size?1:0)+(S.lg.size?1:0)+((S.amin>14||S.amax<60)?1:0)+((S.mmin!=null||S.mmax!=null)?1:0)+(S.pool!==POOL?1:0)+((S.wmin!=null||S.wmax!=null)?1:0)+((S.vmin!=null||S.vmax!=null)?1:0)+(S.within?1:0)+(S.ref?1:0)+S.conds.filter(c=>c.on).length;
 function srText(S){const t=[];if(S.q.trim())t.push(`“${S.q.trim()}”`);if(S.pos.size)t.push("Positions: "+[...S.pos].join(", "));
   if(S.lg.size){const n=[...S.lg].map(k=>(LS[k]||{}).name||k);t.push("Leagues: "+(n.length>3?n.slice(0,3).join(", ")+` +${n.length-3} more`:n.join(", ")));}if(S.amin>14||S.amax<60)t.push(`Age ${S.amin}–${S.amax}`);if(S.foot)t.push(`${S.foot} foot`);
-  if(S.mmin!=null||S.mmax!=null)t.push(`Minutes ${S.mmin??0}–${S.mmax==null?"any":S.mmax}`);if(S.pool!==POOL)t.push(`Percentile pool ≥ ${S.pool} mins`);if(S.wmin!=null||S.wmax!=null)t.push(`Wage £${S.wmin??0}k–${S.wmax==null?"any":"£"+S.wmax+"k"}`);if(S.within)t.push("Percentiles within position group");if(S.ref)t.push("Percentiles against "+refName(S.ref));
+  if(S.mmin!=null||S.mmax!=null)t.push(`Minutes ${S.mmin??0}–${S.mmax==null?"any":S.mmax}`);if(S.pool!==POOL)t.push(`Percentile pool ≥ ${S.pool} mins`);if(S.wmin!=null||S.wmax!=null)t.push(`Wage £${S.wmin??0}k–${S.wmax==null?"any":"£"+S.wmax+"k"}`);if(S.vmin!=null||S.vmax!=null)t.push(`Value £${S.vmin??0}K–${S.vmax==null?"any":"£"+S.vmax+"K"}`);if(S.within)t.push("Percentiles within position group");if(S.ref)t.push("Percentiles against "+refName(S.ref));
   S.conds.filter(c=>c.on).forEach(c=>t.push(`${STATS[c.k].label} ${c.op==="le"?"≤":"≥"} ${isNaN(c.v)?"?":c.v}${c.m==="pct"?" pct":""}`));return t.join(" · ");}
 function srSummary(){const n=srActive(SR),lbl=n?`Edit search (${n})`:"New search";$("sedit").textContent=lbl;$("sclr").hidden=!n;$("ssum").hidden=!n;$("ssum").textContent=srText(SR)+(SR.ref&&refWarn()?" · ⚠ "+refWarn():"");}
 function buildSearch(){
@@ -982,7 +985,7 @@ function srRef(){const cnt={};P.forEach(p=>{const k=lkey(p.r.Division);if(k)cnt[
   const ks=Object.keys(LS).sort((a,b)=>(LIDX[a]??1e9)-(LIDX[b]??1e9)||(cnt[b]||0)-(cnt[a]||0)),my=myLeague();
   $("sref").innerHTML=`<option value="">All leagues</option><option value="top5">Top 5 leagues</option><option value="my"${my?"":" disabled"}>My league${my?" ("+esc(LS[my]?.name||my)+")":" (choose your club first)"}</option><optgroup label="One league">`+ks.map(k=>`<option value="${esc(k)}">${esc(LS[k].name)}</option>`).join("")+"</optgroup>";
   $("sref").value=SD.ref;}
-function srRender(){srPitch();$("srq").value=SD.q;$("samin").value=SD.amin;$("samax").value=SD.amax;$("smmin").value=SD.mmin??"";$("spool").value=SD.pool;$("smmax").value=SD.mmax??"";$("swmin").value=SD.wmin??"";$("swmax").value=SD.wmax??"";$("swithin").checked=SD.within;$("sfoot").value=SD.foot;$("slq").value="";srRef();srLeagues();srConds();srCount();}
+function srRender(){srPitch();$("srq").value=SD.q;$("samin").value=SD.amin;$("samax").value=SD.amax;$("smmin").value=SD.mmin??"";$("spool").value=SD.pool;$("smmax").value=SD.mmax??"";$("swmin").value=SD.wmin??"";$("swmax").value=SD.wmax??"";$("svmin").value=SD.vmin??"";$("svmax").value=SD.vmax??"";$("swithin").checked=SD.within;$("sfoot").value=SD.foot;$("slq").value="";srRef();srLeagues();srConds();srCount();}
 function srOpen(){SD=cloneS(SR);srRender();$("sdlg").showModal();}
 $("sedit").onclick=srOpen;
 $("sclr").onclick=()=>{SR=defSR();ensureCompute(SR);srSummary();view();};
@@ -993,6 +996,8 @@ $("samax").addEventListener("input",e=>{SD.amax=nv(e.target.value)??60;srCount()
 $("smmax").addEventListener("input",e=>{SD.mmax=nv(e.target.value);srCount();});
 $("swmin").addEventListener("input",e=>{SD.wmin=nv(e.target.value);srCount();});
 $("swmax").addEventListener("input",e=>{SD.wmax=nv(e.target.value);srCount();});
+$("svmin").addEventListener("input",e=>{SD.vmin=nv(e.target.value);srCount();});
+$("svmax").addEventListener("input",e=>{SD.vmax=nv(e.target.value);srCount();});
 $("smmin").addEventListener("input",e=>{SD.mmin=nv(e.target.value);srCount();});
 $("spool").addEventListener("input",e=>{SD.pool=nv(e.target.value)??0;clearTimeout(srTimer);srTimer=setTimeout(srCount,250);});
 $("swithin").addEventListener("change",e=>{SD.within=e.target.checked;srCount();});
