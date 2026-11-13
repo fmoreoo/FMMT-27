@@ -168,7 +168,18 @@ class Handler(BaseHTTPRequestHandler):
             if scope not in SCOPES:
                 return self._json({"ok": False, "error": f"unknown scope {scope}"}, 400)
             res = LIVE.players(scope, q.get("rescan", ["0"])[0] == "1", q.get("all", ["0"])[0] == "1")
-            self._json(res, 200 if res.get("ok") else 503)
+            # a failure while building or sending the reply would otherwise just drop the connection,
+            # which the page can only report as "can't reach the reader"
+            try:
+                body = json.dumps(res, ensure_ascii=False, allow_nan=False).encode("utf-8")
+                sys.stderr.write(f"players: {res.get('count', 0):,} rows, {len(body) / 1e6:.0f} MB, "
+                                 f"{res.get('seconds', '?')}s, build {res.get('build', '?')}\n")
+                self._send(200 if res.get("ok") else 503, body, "application/json; charset=utf-8")
+            except (ConnectionError, OSError) as e:
+                sys.stderr.write(f"players: the window closed the connection before the data was sent ({e})\n")
+            except Exception as e:  # MemoryError, ValueError from an odd value, ...
+                traceback.print_exc()
+                self._json({"ok": False, "error": f"The reader failed while preparing the data: {type(e).__name__}: {e}"}, 500)
         else:
             self._send(404, b"not found", "text/plain")
 

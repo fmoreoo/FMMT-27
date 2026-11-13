@@ -788,14 +788,18 @@ async function loadGame(rescan){
   const poll=setInterval(async()=>{try{const g=await (await fetch(`${API}/api/progress`,{cache:"no-store"})).json();
     if(liveBusy&&g.phase)say(g.phase==="read"?`Reading players… ${g.done.toLocaleString()} of ${g.total.toLocaleString()}`:"Finding players…");}catch(e){}},400);
   try{
-    const res=await fetch(`${API}/api/players?scope=${scope}&all=1${rescan?"&rescan=1":""}`,{cache:"no-store"});
-    const d=await res.json();
+    // a dropped connection means the reader stopped or never answered; anything after that is a different problem
+    const NET="Can’t reach the reader: it stopped before sending the data. Close the tool, open it again, then try again. If it keeps happening, your antivirus may be stopping FMMT 27.exe, so allow it there.";
+    let res,d;try{res=await fetch(`${API}/api/players?scope=${scope}&all=1${rescan?"&rescan=1":""}`,{cache:"no-store"});}catch(e){throw new Error(NET);}
+    try{d=await res.json();}catch(e){throw new Error(e instanceof TypeError?NET:`The reader sent data the tool couldn’t read (${e.message}).`);}
     if(!d.ok)throw new Error(d.error||"The game could not be read.");
     DETECTED=(d.my_clubs||[])[0]||null;GDATE=d.date||null;
     start(fromJSON(d.rows),`${metaText(d)} · read at ${new Date().toLocaleTimeString()}`);
     $("reload").hidden=false;$("scope2l").hidden=false;$("lstat").textContent="";
   }catch(e){
-    const msg=e instanceof TypeError?"Can’t reach the reader. Close the tool, open it again, then try again.":/not running/i.test(e.message)?"FM27 isn’t running. Open the game and load your save.":e.message;
+    // errors in the tool's own code show what went wrong, so a report can say which part failed
+    const own=e instanceof TypeError||e instanceof RangeError||e instanceof ReferenceError;if(own)console.error(e);
+    const msg=/not running/i.test(e.message)?"FM27 isn’t running. Open the game and load your save.":own?`The data was read, but the tool hit an error while loading it: ${e.message}. Please report this message.`:e.message;
     $("err").textContent=msg;$("lstat").textContent="";if($("app").style.display==="grid")$("meta").textContent=msg;
   }finally{clearInterval(poll);btns.forEach(b=>b.disabled=false);liveBusy=false;}
 }
