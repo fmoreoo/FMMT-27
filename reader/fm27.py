@@ -39,8 +39,11 @@ PROFILES = {
     # Store update 0.9.2435.0: same layout; player records byte-identical to 0.9.2409 on the same save
     # apart from pointers, and Messi's season stats checked on the game screen on 2026-11-11
     "6AE8CF77-17969000": Profile("FM27 0.9.2435", -0x180, 0x20, 0x468, keeper_saves_summed=True, partial_records=True, clock_date=0x7F4, team_rosters=True, every_player=True),
+    # Store update 0.9.2524.0: same layout; sanity.py passes on a mid-season save, and Gambale's season stats
+    # and all 36 shown attributes matched the game screen on 2026-11-18
+    "6AF5C8C6-179AD000": Profile("FM27 0.9.2524", -0x180, 0x20, 0x468, keeper_saves_summed=True, partial_records=True, clock_date=0x7F4, team_rosters=True, every_player=True),
 }
-LATEST = "6AE8CF77-17969000"
+LATEST = "6AF5C8C6-179AD000"
 
 PLAYER_CLASS = ".?AVACTUAL_PLAYER@db@@"
 PLAYER_SUBOBJECT = 0x288  # all player offsets are relative to this sub-object's vtable
